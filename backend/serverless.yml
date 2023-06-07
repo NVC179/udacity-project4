@@ -8,6 +8,8 @@ plugins:
   - serverless-webpack
   - serverless-iam-roles-per-function
   - serverless-plugin-tracing
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 provider:
   name: aws
@@ -53,31 +55,10 @@ custom:
     models:
       - name: CreateTodoRequest
         contentType: application/json
-        schema: 
-          required:
-            - name
-            - dueDate
-          properties:
-            name:              
-              type: string
-              minLength: 1
-            dueDate:
-              type: string
+        schema: ${file(models/create-todo-model.json)}
       - name: UpdateTodoRequest
         contentType: application/json
-        schema:
-          required:
-            - name
-            - dueDate
-            - done
-          properties:
-            name:              
-              type: string
-              minLength: 1
-            dueDate:
-              type: string
-            done:
-              type: boolean
+        schema: ${file(models/update-todo-model.json)}
 
 functions:
 
@@ -114,6 +95,12 @@ functions:
           path: todos
           cors: true
           authorizer: Auth
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Create a new Todo
+            description: Create a new Todo
+            requestModels:
+              'application/json': CreateTodoRequest
     iamRoleStatements:
     - Effect: Allow
       Action:
@@ -130,6 +117,12 @@ functions:
           path: todos/{todoId}
           authorizer: Auth
           cors: true
+          reqValidatorName: RequestBodyValidator
+          documentation:
+            summary: Update a Todo
+            description: Update a Todo
+            requestModels:
+              'application/json': UpdateTodoRequest
     iamRoleStatements:
     - Effect: Allow
       Action:
@@ -182,12 +175,6 @@ functions:
       Action:
           - s3:PutObject
       Resource: arn:aws:s3:::${self:provider.environment.ATTACHMENT_S3_BUCKET}/*
-    - Effect: Allow
-      Action:
-          - xray:PutTraceSegments
-          - xray:PutTelemetryRecords
-      Resource:
-          - "*"
 
 resources:
   Resources:
